@@ -1,8 +1,7 @@
 # Binary
-canary
+
 
 # Database
-data/
 *.db
 *.db-shm
 *.db-wal
