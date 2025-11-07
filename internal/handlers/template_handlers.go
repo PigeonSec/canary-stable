@@ -24,6 +24,12 @@ func InitTemplates() error {
 	return nil
 }
 
+// parsePageTemplate parses a specific page template along with base.html
+// This avoids namespace conflicts when multiple templates define the same blocks
+func parsePageTemplate(templateFile string) (*template.Template, error) {
+	return template.ParseFiles("web/templates/base.html", templateFile)
+}
+
 // getUserFromRequest extracts user info from session cookie
 func getUserFromRequest(r *http.Request) (*auth.Session, bool) {
 	cookie, err := r.Cookie(auth.SessionCookieName)
@@ -68,11 +74,11 @@ func canUserEdit(r *http.Request) bool {
 
 // ServeRulesPage renders the rules page with server-side data
 func ServeRulesPage(w http.ResponseWriter, r *http.Request) {
-	if templates == nil {
-		if err := InitTemplates(); err != nil {
-			http.Error(w, "Template error", http.StatusInternalServerError)
-			return
-		}
+	// Parse the rules template separately to avoid namespace conflicts
+	tmpl, err := parsePageTemplate("web/templates/rules.html")
+	if err != nil {
+		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	// Get rules from engine
@@ -110,18 +116,18 @@ func ServeRulesPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := templates.ExecuteTemplate(w, "rules.html", data); err != nil {
+	if err := tmpl.ExecuteTemplate(w, "rules.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 // ServeRuleForm renders the create/edit form
 func ServeRuleForm(w http.ResponseWriter, r *http.Request) {
-	if templates == nil {
-		if err := InitTemplates(); err != nil {
-			http.Error(w, "Template error", http.StatusInternalServerError)
-			return
-		}
+	// Parse the rule form template separately to avoid namespace conflicts
+	tmpl, err := parsePageTemplate("web/templates/rule_form.html")
+	if err != nil {
+		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	// Extract rule name from path if editing
@@ -167,7 +173,7 @@ func ServeRuleForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := templates.ExecuteTemplate(w, "rule_form.html", data); err != nil {
+	if err := tmpl.ExecuteTemplate(w, "rule_form.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -546,11 +552,11 @@ func deleteRuleFromFile(ruleName string) error {
 
 // ServeDashboardPage renders the dashboard page with server-side data
 func ServeDashboardPage(w http.ResponseWriter, r *http.Request) {
-	if templates == nil {
-		if err := InitTemplates(); err != nil {
-			http.Error(w, "Template error", http.StatusInternalServerError)
-			return
-		}
+	// Parse the dashboard template separately to avoid namespace conflicts
+	tmpl, err := parsePageTemplate("web/templates/dashboard.html")
+	if err != nil {
+		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	// Check if user can edit
@@ -583,18 +589,18 @@ func ServeDashboardPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := templates.ExecuteTemplate(w, "dashboard.html", data); err != nil {
+	if err := tmpl.ExecuteTemplate(w, "dashboard.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 // ServeLoginPage renders the login page
 func ServeLoginPage(w http.ResponseWriter, r *http.Request) {
-	if templates == nil {
-		if err := InitTemplates(); err != nil {
-			http.Error(w, "Template error", http.StatusInternalServerError)
-			return
-		}
+	// Parse the login template separately to avoid namespace conflicts
+	tmpl, err := parsePageTemplate("web/templates/login.html")
+	if err != nil {
+		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	// Get error from query params (for login failures)
@@ -607,7 +613,7 @@ func ServeLoginPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := templates.ExecuteTemplate(w, "login.html", data); err != nil {
+	if err := tmpl.ExecuteTemplate(w, "login.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
