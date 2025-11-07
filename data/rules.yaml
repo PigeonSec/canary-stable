@@ -45,7 +45,7 @@ rules:
     comment: "Apple ID phishing - targets iCloud and iTunes users"
 
   - name: amazon_account_phish
-    keywords: amazon AND (login OR signin OR account OR verify OR suspended) AND NOT (aws OR amazon.com OR cloudfront)
+    keywords: amazon AND (login OR signin OR account OR verify OR suspended) AND NOT (aws OR amazon.com OR cloudfront OR aws.dev)
     priority: high
     enabled: true
     comment: "Amazon account phishing (excluding AWS/CDN infrastructure)"
@@ -77,7 +77,7 @@ rules:
     comment: "Azure cloud portal phishing - targets IT administrators"
 
   - name: aws_console_phish
-    keywords: aws AND (console OR login OR signin OR admin OR management) AND NOT (amazon.com OR amazonaws.com)
+    keywords: aws AND (console OR login OR signin OR admin OR management) AND NOT (amazon.com OR amazonaws.com OR aws.dev)
     priority: high
     enabled: true
     comment: "AWS console phishing - targets cloud administrators"
