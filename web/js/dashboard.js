@@ -26,21 +26,46 @@ class Dashboard {
 
     setupEventListeners() {
         // Search and filter (client-side)
-        document.getElementById('refreshBtn').addEventListener('click', () => this.loadMatches());
-        document.getElementById('searchInput').addEventListener('input', () => this.filterMatches());
-        document.getElementById('timeRange').addEventListener('change', () => this.loadMatches());
-        document.getElementById('priorityFilter').addEventListener('change', () => this.filterMatches());
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.loadMatches());
+        }
+
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => this.filterMatches());
+        }
+
+        const timeRange = document.getElementById('timeRange');
+        if (timeRange) {
+            timeRange.addEventListener('change', () => this.loadMatches());
+        }
+
+        const priorityFilter = document.getElementById('priorityFilter');
+        if (priorityFilter) {
+            priorityFilter.addEventListener('change', () => this.filterMatches());
+        }
 
         // Pagination
-        document.getElementById('prevPage').addEventListener('click', () => this.prevPage());
-        document.getElementById('nextPage').addEventListener('click', () => this.nextPage());
+        const prevPage = document.getElementById('prevPage');
+        if (prevPage) {
+            prevPage.addEventListener('click', () => this.prevPage());
+        }
+
+        const nextPage = document.getElementById('nextPage');
+        if (nextPage) {
+            nextPage.addEventListener('click', () => this.nextPage());
+        }
 
         // Clear matches button (shows confirmation)
         const clearBtn = document.getElementById('clearBtn');
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
                 if (confirm('Are you sure you want to clear all matches from memory?')) {
-                    document.getElementById('clearForm').submit();
+                    const clearForm = document.getElementById('clearForm');
+                    if (clearForm) {
+                        clearForm.submit();
+                    }
                 }
             });
         }
@@ -48,6 +73,8 @@ class Dashboard {
 
     setupThemeToggle() {
         const themeToggle = document.getElementById('themeToggle');
+        if (!themeToggle) return;
+
         const html = document.documentElement;
 
         const savedTheme = localStorage.getItem('theme') || 'light';
@@ -65,7 +92,17 @@ class Dashboard {
 
     updateThemeIcon(theme) {
         const icon = document.querySelector('#themeToggle i');
-        icon.className = theme === 'light' ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
+        if (icon) {
+            icon.className = theme === 'light' ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
+        }
+    }
+
+    // Helper to safely update element text content
+    safeSetText(elementId, text) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = text;
+        }
     }
 
     async loadMetrics() {
@@ -74,9 +111,9 @@ class Dashboard {
             if (!response.ok) throw new Error('Failed to load metrics');
 
             const data = await response.json();
-            document.getElementById('totalMatches').textContent = data.total_matches.toLocaleString();
-            document.getElementById('totalCerts').textContent = data.total_certs.toLocaleString();
-            document.getElementById('activeRules').textContent = data.rules_count.toLocaleString();
+            this.safeSetText('totalMatches', data.total_matches.toLocaleString());
+            this.safeSetText('totalCerts', data.total_certs.toLocaleString());
+            this.safeSetText('activeRules', data.rules_count.toLocaleString());
 
             // Format uptime
             const uptime = data.uptime_seconds;
@@ -90,7 +127,7 @@ class Dashboard {
             } else {
                 uptimeStr = Math.floor(uptime / 86400) + 'd';
             }
-            document.getElementById('uptime').textContent = uptimeStr;
+            this.safeSetText('uptime', uptimeStr);
 
             // Show clear button if there are matches
             const clearBtn = document.getElementById('clearBtn');
@@ -114,12 +151,12 @@ class Dashboard {
             const current = data.current;
 
             if (current) {
-                document.getElementById('certsPerMin').textContent = current.certs_per_minute.toLocaleString();
-                document.getElementById('matchesPerMin').textContent = current.matches_per_minute.toLocaleString();
-                document.getElementById('avgMatchTime').textContent = current.avg_match_time_us + ' μs';
-                document.getElementById('cpuUsage').textContent = current.cpu_percent.toFixed(1) + '%';
-                document.getElementById('memoryUsage').textContent = current.memory_used_mb.toFixed(1) + ' MB';
-                document.getElementById('goroutines').textContent = current.goroutine_count.toLocaleString();
+                this.safeSetText('certsPerMin', current.certs_per_minute.toLocaleString());
+                this.safeSetText('matchesPerMin', current.matches_per_minute.toLocaleString());
+                this.safeSetText('avgMatchTime', current.avg_match_time_us + ' μs');
+                this.safeSetText('cpuUsage', current.cpu_percent.toFixed(1) + '%');
+                this.safeSetText('memoryUsage', current.memory_used_mb.toFixed(1) + ' MB');
+                this.safeSetText('goroutines', current.goroutine_count.toLocaleString());
             }
         } catch (error) {
             console.error('Error loading performance metrics:', error);
@@ -127,7 +164,8 @@ class Dashboard {
     }
 
     async loadMatches() {
-        const timeRange = document.getElementById('timeRange').value;
+        const timeRangeEl = document.getElementById('timeRange');
+        const timeRange = timeRangeEl ? timeRangeEl.value : '30';
 
         try {
             const response = await fetch(`/api/matches/recent?minutes=${timeRange}`);
@@ -156,8 +194,11 @@ class Dashboard {
     }
 
     filterMatches() {
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        const priorityFilter = document.getElementById('priorityFilter').value;
+        const searchInputEl = document.getElementById('searchInput');
+        const priorityFilterEl = document.getElementById('priorityFilter');
+
+        const searchTerm = searchInputEl ? searchInputEl.value.toLowerCase() : '';
+        const priorityFilter = priorityFilterEl ? priorityFilterEl.value : '';
 
         this.filteredMatches = this.matches.filter(match => {
             const domainMatch = match.dns_names.some(domain =>
@@ -173,17 +214,21 @@ class Dashboard {
 
     renderMatches() {
         const tbody = document.getElementById('matchesTableBody');
+        if (!tbody) return;
+
         const start = this.currentPage * this.pageSize;
         const end = start + this.pageSize;
         const pageMatches = this.filteredMatches.slice(start, end);
 
         // Update counts
-        document.getElementById('matchCount').textContent = `${this.filteredMatches.length} matches`;
-        document.getElementById('matchCountFooter').textContent = `${this.filteredMatches.length} matches`;
+        this.safeSetText('matchCount', `${this.filteredMatches.length} matches`);
+        this.safeSetText('matchCountFooter', `${this.filteredMatches.length} matches`);
 
         // Update pagination buttons
-        document.getElementById('prevPage').disabled = this.currentPage === 0;
-        document.getElementById('nextPage').disabled = end >= this.filteredMatches.length;
+        const prevPage = document.getElementById('prevPage');
+        const nextPage = document.getElementById('nextPage');
+        if (prevPage) prevPage.disabled = this.currentPage === 0;
+        if (nextPage) nextPage.disabled = end >= this.filteredMatches.length;
 
         if (pageMatches.length === 0) {
             tbody.innerHTML = `
@@ -266,6 +311,8 @@ class Dashboard {
 
     updateStatusBadge(online) {
         const badge = document.getElementById('statusBadge');
+        if (!badge) return;
+
         if (online) {
             badge.className = 'badge bg-success';
             badge.innerHTML = '<i class="bi bi-check-circle me-1"></i>Online';
