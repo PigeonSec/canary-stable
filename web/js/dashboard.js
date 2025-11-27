@@ -263,9 +263,21 @@ class Dashboard {
         // Use last matched domain for main row
         const mainDomain = matchingDomains.length > 0 ? matchingDomains[matchingDomains.length - 1] : '';
         
-        // The rest go in the dropdown
-        const otherDomains = matchingDomains.length > 1 ? matchingDomains.slice(0, matchingDomains.length - 1) : [];
-        const remainingCount = otherDomains.length;
+        // Determine domains to show in dropdown
+        let dropdownDomains = [];
+        let dropdownTitle = "";
+        
+        if (matchingDomains.length === 1) {
+            // If only one domain, show it in dropdown so it can be copied
+            dropdownDomains = matchingDomains;
+            dropdownTitle = "Matched Domain";
+        } else if (matchingDomains.length > 1) {
+            // If multiple, show the others (excluding the one in main row)
+            dropdownDomains = matchingDomains.slice(0, matchingDomains.length - 1);
+            dropdownTitle = `Other Matched Domains (${dropdownDomains.length})`;
+        }
+        
+        const remainingCount = matchingDomains.length > 1 ? matchingDomains.length - 1 : 0;
 
         const priorityBadge = {
             critical: 'danger',
@@ -308,10 +320,10 @@ class Dashboard {
                                 <strong>Rule:</strong> ${this.escapeHtml(match.matched_rule)}<br>
                                 <strong>Keywords:</strong> ${keywordsHtml}
                             </div>
-                            ${remainingCount > 0 ? `
-                            <h6 class="card-subtitle mb-2 text-muted mt-2">Other Matched Domains (${remainingCount})</h6>
+                            ${dropdownDomains.length > 0 ? `
+                            <h6 class="card-subtitle mb-2 text-muted mt-2">${dropdownTitle}</h6>
                             <div class="row g-2">
-                                ${otherDomains.map(domain => {
+                                ${dropdownDomains.map(domain => {
                                     return `
                                     <div class="col-12 col-md-6 col-lg-4">
                                         <div class="d-flex align-items-center p-2 rounded bg-white border" 
