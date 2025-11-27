@@ -1,4 +1,4 @@
-// Dashboard - Live Data Polling Only
+// Dashboard handles live data polling and UI updates.
 // All write operations (logout, clear matches) are handled by HTML forms
 class Dashboard {
     constructor() {
@@ -13,7 +13,6 @@ class Dashboard {
 
     async init() {
         this.setupEventListeners();
-        // Theme toggle is now handled by base.html template
 
         // Initial load
         await this.loadMetrics();
@@ -25,7 +24,7 @@ class Dashboard {
     }
 
     setupEventListeners() {
-        // Search and filter (client-side)
+        // Client-side filtering
         const refreshBtn = document.getElementById('refreshBtn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => this.loadMatches());
@@ -46,7 +45,6 @@ class Dashboard {
             priorityFilter.addEventListener('change', () => this.filterMatches());
         }
 
-        // Pagination
         const prevPage = document.getElementById('prevPage');
         if (prevPage) {
             prevPage.addEventListener('click', () => this.prevPage());
@@ -72,7 +70,6 @@ class Dashboard {
     }
 
 
-    // Helper to safely update element text content
     safeSetText(elementId, text) {
         const element = document.getElementById(elementId);
         if (element) {
@@ -90,7 +87,6 @@ class Dashboard {
             this.safeSetText('totalCerts', data.total_certs.toLocaleString());
             this.safeSetText('activeRules', data.rules_count.toLocaleString());
 
-            // Format uptime
             const uptime = data.uptime_seconds;
             let uptimeStr = '';
             if (uptime < 60) {
@@ -104,7 +100,6 @@ class Dashboard {
             }
             this.safeSetText('uptime', uptimeStr);
 
-            // Show clear button if there are matches
             const clearBtn = document.getElementById('clearBtn');
             if (clearBtn && data.recent_matches > 0) {
                 clearBtn.style.display = '';
@@ -201,11 +196,9 @@ class Dashboard {
         const end = start + this.pageSize;
         const pageMatches = this.filteredMatches.slice(start, end);
 
-        // Update counts
         this.safeSetText('matchCount', `${this.filteredMatches.length} matches`);
         this.safeSetText('matchCountFooter', `${this.filteredMatches.length} matches`);
 
-        // Update pagination buttons
         const prevPage = document.getElementById('prevPage');
         const nextPage = document.getElementById('nextPage');
         if (prevPage) prevPage.disabled = this.currentPage === 0;
@@ -232,7 +225,7 @@ class Dashboard {
         const matchId = `match-${match.tbs_sha256 || match.id || Math.random().toString(36).substr(2, 9)}`;
         const isOpen = openRows.has(matchId);
         
-        // Process keywords first to use for domain highlighting
+        // Extract and deduplicate keywords for highlighting
         let keywords = [];
         if (Array.isArray(match.matched_domains)) {
             match.matched_domains.forEach(s => {
@@ -245,10 +238,8 @@ class Dashboard {
         } else if (typeof match.matched_domains === 'string') {
             keywords = match.matched_domains.split(',').filter(k => k.trim());
         }
-        // Deduplicate keywords
         keywords = [...new Set(keywords)];
 
-        // Helper for highlighting
         const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const highlightDomain = (domain) => {
             if (!keywords.length) return this.escapeHtml(domain);
@@ -260,19 +251,21 @@ class Dashboard {
             }).join('');
         };
 
-        // Sort domains: matches first
+        // Filter domains: only show those that match the rule
         const isMatch = (domain) => keywords.some(kw => domain.toLowerCase().includes(kw.toLowerCase()));
-        const sortedDomains = [...match.dns_names].sort((a, b) => {
-            const aMatch = isMatch(a);
-            const bMatch = isMatch(b);
-            if (aMatch && !bMatch) return -1;
-            if (!aMatch && bMatch) return 1;
-            return a.localeCompare(b);
-        });
+        let matchingDomains = (match.dns_names || []).filter(d => isMatch(d));
+        
+        // Fallback
+        if (matchingDomains.length === 0 && match.dns_names && match.dns_names.length > 0) {
+             matchingDomains = match.dns_names;
+        }
 
-        const domainCount = sortedDomains.length;
-        const firstDomain = sortedDomains[0];
-        const remainingCount = domainCount - 1;
+        // Use last matched domain for main row
+        const mainDomain = matchingDomains.length > 0 ? matchingDomains[matchingDomains.length - 1] : '';
+        
+        // The rest go in the dropdown
+        const otherDomains = matchingDomains.length > 1 ? matchingDomains.slice(0, matchingDomains.length - 1) : [];
+        const remainingCount = otherDomains.length;
 
         const priorityBadge = {
             critical: 'danger',
@@ -285,15 +278,14 @@ class Dashboard {
             `<span class="badge bg-light text-dark border me-1 mb-1">${this.escapeHtml(k)}</span>`
         ).join('');
 
-        // Main Row
         const mainRow = `
             <tr style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#${matchId}" aria-expanded="${isOpen}" aria-controls="${matchId}" class="${isOpen ? '' : 'collapsed'}">
                 <td class="text-nowrap d-none d-md-table-cell"><small>${this.escapeHtml(timestamp)}</small></td>
                 <td>
                     <div class="d-flex align-items-center">
                         <i class="bi bi-chevron-down me-2 text-muted" style="font-size: 0.8em;"></i>
-                        <span class="text-truncate" style="max-width: 200px;">
-                            ${highlightDomain(firstDomain)}
+                        <span class="text-truncate" style="max-width: 450px;">
+                            ${highlightDomain(mainDomain)}
                         </span>
                         ${remainingCount > 0 ? `<span class="badge bg-secondary ms-2">+${remainingCount}</span>` : ''}
                     </div>
@@ -307,7 +299,6 @@ class Dashboard {
             </tr>
         `;
 
-        // Details Row (Collapsible)
         const detailsRow = `
             <tr>
                 <td colspan="5" class="p-0 border-0">
@@ -317,9 +308,10 @@ class Dashboard {
                                 <strong>Rule:</strong> ${this.escapeHtml(match.matched_rule)}<br>
                                 <strong>Keywords:</strong> ${keywordsHtml}
                             </div>
-                            <h6 class="card-subtitle mb-2 text-muted">All Domains (${domainCount})</h6>
+                            ${remainingCount > 0 ? `
+                            <h6 class="card-subtitle mb-2 text-muted mt-2">Other Matched Domains (${remainingCount})</h6>
                             <div class="row g-2">
-                                ${sortedDomains.map(domain => {
+                                ${otherDomains.map(domain => {
                                     return `
                                     <div class="col-12 col-md-6 col-lg-4">
                                         <div class="d-flex align-items-center p-2 rounded bg-white border" 
@@ -335,6 +327,7 @@ class Dashboard {
                                     </div>`;
                                 }).join('')}
                             </div>
+                            ` : ''}
                         </div>
                     </div>
                 </td>
@@ -389,7 +382,6 @@ class Dashboard {
     }
 }
 
-// Global copy to clipboard function
 window.copyToClipboard = function(text, element) {
     navigator.clipboard.writeText(text).then(() => {
         // Show feedback

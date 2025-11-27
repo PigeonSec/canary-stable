@@ -14,31 +14,26 @@ func (e *Engine) Evaluate(matchedKeywords []string, domains []string) *RuleMatch
 		return nil
 	}
 
-	// Convert keywords to set for O(1) lookup
 	keywordSet := make(map[string]bool, len(matchedKeywords))
 	for _, kw := range matchedKeywords {
 		keywordSet[kw] = true
 	}
 
-	// Evaluate rules in priority order (already sorted when loaded)
-	// Stop at first match
+	// Rules are pre-sorted by priority
 	for _, rule := range e.Rules {
 		if !rule.Enabled {
 			continue
 		}
 
-		// For this rule, check if any NOT keywords exist in domains
-		// and add them to keywordSet for proper NOT evaluation
+		// Check for NOT keywords in domains
 		ruleKeywordSet := make(map[string]bool)
 		for k, v := range keywordSet {
 			ruleKeywordSet[k] = v
 		}
 
-		// Get all keywords from the rule
 		allRuleKeywords := rule.Expression.ExtractKeywords()
 		positiveRuleKeywords := rule.Expression.ExtractPositiveKeywords()
 
-		// Find NOT keywords (keywords not in positive list)
 		positiveSet := make(map[string]bool)
 		for _, kw := range positiveRuleKeywords {
 			positiveSet[strings.ToLower(kw)] = true

@@ -30,7 +30,6 @@ func parsePageTemplate(templateFile string) (*template.Template, error) {
 	return template.ParseFiles("web/templates/base.html", templateFile)
 }
 
-// getUserFromRequest extracts user info from session cookie
 func getUserFromRequest(r *http.Request) (*auth.Session, bool) {
 	cookie, err := r.Cookie(auth.SessionCookieName)
 	if err != nil {
@@ -45,7 +44,6 @@ func getUserFromRequest(r *http.Request) (*auth.Session, bool) {
 	return session, true
 }
 
-// getCSRFToken gets or creates a CSRF token for the current session
 func getCSRFToken(r *http.Request) string {
 	cookie, err := r.Cookie(auth.SessionCookieName)
 	if err != nil {

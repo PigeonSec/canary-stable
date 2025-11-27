@@ -39,7 +39,6 @@ func Hook(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[DEBUG] Raw webhook body (%d bytes): %s", len(bodyBytes), string(bodyBytes))
 	}
 
-	// Parse JSON
 	var event models.CertspotterEvent
 	if err := json.Unmarshal(bodyBytes, &event); err != nil {
 		if config.Debug {
@@ -72,7 +71,6 @@ func Hook(w http.ResponseWriter, r *http.Request) {
 			seen[domain] = true
 		}
 
-		// Try ToASCII (Punycode)
 		if ascii, err := idna.ToASCII(domain); err == nil && ascii != domain {
 			if !seen[ascii] {
 				expandedDomains = append(expandedDomains, ascii)
@@ -80,7 +78,6 @@ func Hook(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Try ToUnicode
 		if unicode, err := idna.ToUnicode(domain); err == nil && unicode != domain {
 			if !seen[unicode] {
 				expandedDomains = append(expandedDomains, unicode)
@@ -90,10 +87,9 @@ func Hook(w http.ResponseWriter, r *http.Request) {
 	}
 	allDomains = expandedDomains
 
-	// Use rule engine's Aho-Corasick directly (no separate keywords.txt)
+	// Use rule engine directly
 	engineVal := config.RuleEngine.Load()
 	if engineVal == nil {
-		// No rules loaded - skip processing
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"status":  "ok",

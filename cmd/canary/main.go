@@ -175,8 +175,8 @@ func main() {
 	mux.Handle("/theme.css", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "web/theme.css")
 	}))
-	mux.Handle("/canary.jpg", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "web/canary.jpg")
+	mux.Handle("/canary.webp", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/canary.webp")
 	}))
 
 	// JSON API endpoints (for backward compatibility and programmatic access)

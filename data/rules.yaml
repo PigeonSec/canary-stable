@@ -103,11 +103,10 @@ rules:
     comment: "Cryptocurrency exchange phishing - high-value target"
 
   - name: docusign_phish
-    keywords: docusign AND (sign OR document OR secure OR verify)
+    keywords: docusign AND (sign OR document OR secure OR verify OR salary)
     priority: medium
     enabled: true
-    comment: "DocuSign impersonation - often used in business email compromise"
-
+    comment: DocuSign impersonation - often used in business email compromise
   # MEDIUM: Generic Phishing Patterns
   - name: credential_harvesting
     keywords: (login OR signin OR authenticate) AND (secure OR verify OR account OR password) AND NOT (microsoft.com OR google.com OR apple.com)
